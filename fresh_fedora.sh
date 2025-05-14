@@ -23,7 +23,9 @@ dnf install -y \
 thunderbird\
 gimp\
 zsh\
-vim
+vim\
+python3-pip
+
 
 flatpak install -y\
 com.mattjakeman.ExtensionManager\
