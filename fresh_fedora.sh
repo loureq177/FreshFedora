@@ -18,13 +18,23 @@ gnome-tour
 # Update apps and system
 dnf upgrade -y
 
-# Install essential apps
+# Install essential apps from dnf
 dnf install -y \
 thunderbird\
 gimp\
 zsh\
 vim\
-python3-pip
+python3-pip\
+gnome-firmware\
+# nvidia drivers
+akmod-nvidia \
+xorg-x11-drv-nvidia-cuda \
+xorg-x11-drv-nvidia-power \
+nvidia-vaapi-driver \
+vdpauinfo\
+xorg-x11-drv-nvidia-cuda-libs\
+kernel-headers\
+kernel-devel
 
 
 flatpak install -y\
