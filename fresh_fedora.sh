@@ -13,7 +13,8 @@ gnome-contacts\
 simple-scan\
 yelp\
 orca\
-gnome-tour
+gnome-tour\
+gnome-tweaks
 
 # Update apps and system
 dnf upgrade -y
@@ -26,7 +27,13 @@ zsh\
 vim\
 python3-pip\
 gnome-firmware\
-# nvidia drivers
+sox\ # audio library for the `keep_JBL_alive.sh`
+fzf\
+fastfetch\
+ollama\
+cmatrix\
+
+# Nvidia drivers
 akmod-nvidia \
 xorg-x11-drv-nvidia-cuda \
 xorg-x11-drv-nvidia-power \
@@ -34,7 +41,10 @@ nvidia-vaapi-driver \
 vdpauinfo\
 xorg-x11-drv-nvidia-cuda-libs\
 kernel-headers\
-kernel-devel
+kernel-devel\
+
+# System utilities
+xrandr
 
 
 flatpak install -y\
@@ -55,7 +65,14 @@ dnf install code
 # Fix brightness issue
 gsettings set org.gnome.settings-daemon.plugins.power ambient-enabled false
 
+# Fix lofree keyboard
+echo 2 | sudo tee /sys/module/hid_apple/parameters/fnmode
+sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="/GRUB_CMDLINE_LINUX_DEFAULT="hid_apple.fnmode=2 /' /etc/default/grub
 chsh -s /usr/bin/zsh
+
+# Tailor settings
+gsettings set org.gnome.desktop.wm.preferences button-layout 'appmenu:minimize,maximize,close'
+gsettings set org.gnome.desktop.interface show-battery-percentage true
 
 dnf autoremove -y
 dnf clean all -y
