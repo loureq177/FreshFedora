@@ -1,9 +1,29 @@
 #! /bin/bash
 
-# This script has to be run with superuser privileages.
+echo "Remember: This script has to be run with superuser privileages."
 
-# Install Z-Shell
-######################################
+
+##### SETTINGS #####
+# Set dark-mode
+gsettings set org.gnome.desktop.interface gtk-theme 'Adwaita-dark'
+gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
+
+# Set Fonts and sizes
+gsettings set org.gnome.desktop.interface font-name 'Adwaita Sans 12'
+gsettings set org.gnome.desktop.interface document-font-name 'Adwaita Sans 12'
+gsettings set org.gnome.desktop.interface monospace-font-name 'Adwaita Mono 16' 
+
+# Add missing window buttons 
+gsettings set org.gnome.desktop.wm.preferences button-layout 'appmenu:minimize,maximize,close'
+
+# Add battery percentage
+gsettings set org.gnome.desktop.interface show-battery-percentage true
+
+# Remap caps-lock to escape
+gsettings set org.TRRme.desktop.input-sources xkb-options "['caps:escape']"
+
+# Set time format to 24h
+gsettings set org.gnome.desktop.interface clock-format '24h'
 
 # Remove unnecessary stuff
 sudo dnf remove -y \
@@ -26,7 +46,10 @@ dnf install -y --skip-unavailable\
 thunderbird\
 gimp\
 zsh\
+oh-my-zsh\
 vim\
+nvim\
+steam\
 python3-pip\
 gnome-firmware\
 sox\ # audio library for the `keep_JBL_alive.sh`
@@ -34,6 +57,10 @@ fzf\
 fastfetch\
 ollama\
 cmatrix\
+docker\
+
+# Add myself to docker group (no sudo required)
+usermod -aG docker $USER
 
 # Nvidia drivers
 akmod-nvidia \
@@ -78,7 +105,7 @@ echo 2 | tee /sys/module/hid_apple/parameters/fnmode
 sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="/GRUB_CMDLINE_LINUX_DEFAULT="hid_apple.fnmode=2 /' /etc/default/grub
 grub2-mkconfig -o /boot/grub2/grub.cfg
 
-# Tailor settings
+
 gsettings set org.gnome.desktop.wm.preferences button-layout 'appmenu:minimize,maximize,close'
 gsettings set org.gnome.desktop.interface show-battery-percentage true
 
