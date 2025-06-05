@@ -3,7 +3,7 @@
 echo "Remember: This script has to be run with superuser privileages."
 
 
-##### SETTINGS #####
+##### Tailor GNOME Settings #####
 # Set dark-mode
 gsettings set org.gnome.desktop.interface gtk-theme 'Adwaita-dark'
 gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
@@ -60,9 +60,9 @@ cmatrix\
 docker\
 
 # Add myself to docker group (no sudo required)
-usermod -aG docker $USER
+usermod -aG docker $USER\
 
-# Nvidia drivers
+# Install Nvidia drivers
 akmod-nvidia \
 xorg-x11-drv-nvidia-cuda \
 xorg-x11-drv-nvidia-power \
@@ -72,8 +72,11 @@ xorg-x11-drv-nvidia-cuda-libs\
 kernel-headers\
 kernel-devel\
 
-# System utilities
+# Install System utilities
 xrandr
+
+# install uv for python
+curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Flatpak apps
 flatpak install -y\
@@ -97,17 +100,11 @@ git clone https://github.com/loureq177/dotfiles ~/.dotfiles
 ln -s ~/.dotfiles/.zshrc ~/.zshrc
 ln -s ~/.dotfiles/.gitconfig ~/.gitconfig
 
-# Fix brightness issue
-gsettings set org.gnome.settings-daemon.plugins.power ambient-enabled false
-
 # Fix lofree keyboard
 echo 2 | tee /sys/module/hid_apple/parameters/fnmode
 sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="/GRUB_CMDLINE_LINUX_DEFAULT="hid_apple.fnmode=2 /' /etc/default/grub
 grub2-mkconfig -o /boot/grub2/grub.cfg
 
-
-gsettings set org.gnome.desktop.wm.preferences button-layout 'appmenu:minimize,maximize,close'
-gsettings set org.gnome.desktop.interface show-battery-percentage true
 
 dnf autoremove -y
 dnf clean all -y
