@@ -34,7 +34,44 @@ echo "Configuring GNOME settings..."
 # Wait for GNOME to be available
 sleep 2
 
+# Prevent shell switching during script execution
+export SHELL=/bin/bash
+export RUNZSH=no
+
+if [ "$EUID" -ne 0 ]; then
+  echo "Please, run again as a superuser"
+  exit 1
+fi
+
+# Get the real user (not root)
+REAL_USER=${SUDO_USER:-$(logname)}
+REAL_HOME=$(eval echo ~$REAL_USER)
+REAL_UID=$(id -u $REAL_USER)
+
+echo "Running script for user: $REAL_USER"
+echo "User home directory: $REAL_HOME"
+echo "User UID: $REAL_UID"
+
+# Fix permissions for XDG runtime directory if needed
+if [ ! -d "/run/user/$REAL_UID" ]; then
+    mkdir -p "/run/user/$REAL_UID"
+    chown $REAL_USER:$REAL_USER "/run/user/$REAL_UID"
+    chmod 700 "/run/user/$REAL_UID"
+fi
+
+# Fix SELinux contexts to prevent permission denied errors
+echo "Fixing SELinux contexts..."
+restorecon -R "/run/user/$REAL_UID" 2>/dev/null || true
+setsebool -P use_fusefs_home_dirs 1 2>/dev/null || true
+
+echo "Configuring GNOME settings..."
+# Wait for GNOME to be available
+sleep 2
+
 # Set dark-mode
+echo "Setting dark theme..."
+sudo -u $REAL_USER XDG_RUNTIME_DIR=/run/user/$REAL_UID DISPLAY=:0 gsettings set org.gnome.desktop.interface gtk-theme 'Adwaita-dark' || echo "Failed to set GTK theme"
+sudo -u $REAL_USER XDG_RUNTIME_DIR=/run/user/$REAL_UID DISPLAY=:0 gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark' || echo "Failed to set color scheme"
 echo "Setting dark theme..."
 sudo -u $REAL_USER XDG_RUNTIME_DIR=/run/user/$REAL_UID DISPLAY=:0 gsettings set org.gnome.desktop.interface gtk-theme 'Adwaita-dark' || echo "Failed to set GTK theme"
 sudo -u $REAL_USER XDG_RUNTIME_DIR=/run/user/$REAL_UID DISPLAY=:0 gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark' || echo "Failed to set color scheme"
@@ -49,16 +86,30 @@ sudo -u $REAL_USER XDG_RUNTIME_DIR=/run/user/$REAL_UID DISPLAY=:0 gsettings set 
 # Add missing window buttons 
 echo "Setting window buttons..."
 sudo -u $REAL_USER XDG_RUNTIME_DIR=/run/user/$REAL_UID DISPLAY=:0 gsettings set org.gnome.desktop.wm.preferences button-layout 'appmenu:minimize,maximize,close' || echo "Failed to set window buttons"
+echo "Setting window buttons..."
+sudo -u $REAL_USER XDG_RUNTIME_DIR=/run/user/$REAL_UID DISPLAY=:0 gsettings set org.gnome.desktop.wm.preferences button-layout 'appmenu:minimize,maximize,close' || echo "Failed to set window buttons"
 
 # Add battery percentage
+echo "Setting battery percentage..."
+sudo -u $REAL_USER XDG_RUNTIME_DIR=/run/user/$REAL_UID DISPLAY=:0 gsettings set org.gnome.desktop.interface show-battery-percentage true || echo "Failed to set battery percentage"
 echo "Setting battery percentage..."
 sudo -u $REAL_USER XDG_RUNTIME_DIR=/run/user/$REAL_UID DISPLAY=:0 gsettings set org.gnome.desktop.interface show-battery-percentage true || echo "Failed to set battery percentage"
 
 # Remap caps-lock to escape
 echo "Setting caps-lock to escape..."
 sudo -u $REAL_USER XDG_RUNTIME_DIR=/run/user/$REAL_UID DISPLAY=:0 gsettings set org.gnome.desktop.input-sources xkb-options "['caps:escape']" || echo "Failed to set caps-lock mapping"
+echo "Setting caps-lock to escape..."
+sudo -u $REAL_USER XDG_RUNTIME_DIR=/run/user/$REAL_UID DISPLAY=:0 gsettings set org.gnome.desktop.input-sources xkb-options "['caps:escape']" || echo "Failed to set caps-lock mapping"
 
 # Set time format to 24h
+echo "Setting 24h time format..."
+sudo -u $REAL_USER XDG_RUNTIME_DIR=/run/user/$REAL_UID DISPLAY=:0 gsettings set org.gnome.desktop.interface clock-format '24h' || echo "Failed to set clock format"
+
+# Set microphone volume to 30%
+echo "Setting microphone volume..."
+sudo -u $REAL_USER XDG_RUNTIME_DIR=/run/user/$REAL_UID PULSE_RUNTIME_PATH=/run/user/$REAL_UID/pulse pactl set-source-volume alsa_input.pci-0000_06_00.6.analog-stereo 30% || echo "Failed to set microphone volume"
+
+echo "Adding Visual Studio Code repo..."
 echo "Setting 24h time format..."
 sudo -u $REAL_USER XDG_RUNTIME_DIR=/run/user/$REAL_UID DISPLAY=:0 gsettings set org.gnome.desktop.interface clock-format '24h' || echo "Failed to set clock format"
 
@@ -149,6 +200,7 @@ sudo -u $REAL_USER XDG_RUNTIME_DIR=/run/user/$REAL_UID HOME=$REAL_HOME SHELL=/bi
 chsh -s $(which zsh) $REAL_USER
 
 echo "Setting up Flatpak and installing apps..."
+
 # Setup Flatpak repository
 echo "Setting up Flatpak repository..."
 sudo -u $REAL_USER XDG_RUNTIME_DIR=/run/user/$REAL_UID HOME=$REAL_HOME flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
