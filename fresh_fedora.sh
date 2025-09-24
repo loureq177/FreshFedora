@@ -216,6 +216,12 @@ sudo -u $REAL_USER XDG_RUNTIME_DIR=/run/user/$REAL_UID HOME=$REAL_HOME flatpak i
 echo "Installing Extension Manager..."
 sudo -u $REAL_USER XDG_RUNTIME_DIR=/run/user/$REAL_UID HOME=$REAL_HOME flatpak install -y flathub com.mattjakeman.ExtensionManager || echo "Failed to install Extension Manager"
 
+echo "Installing Zen..."
+sudo -u $REAL_USER XDG_RUNTIME_DIR=/run/user/$REAL_UID HOME=$REAL_HOME flatpak install -y flathub app.zen_browser.zen || echo "Failed to install Zen"
+
+echo "Installing Obsidian..."
+sudo -u $REAL_USER XDG_RUNTIME_DIR=/run/user/$REAL_UID HOME=$REAL_HOME flatpak install -y flathub md.obsidian.Obsidian || echo "Failed to install Obsidian"
+
 # Fix Lofree keyboard
 # echo 2 | tee /sys/module/hid_apple/parameters/fnmode
 # sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="/GRUB_CMDLINE_LINUX_DEFAULT="hid_apple.fnmode=2 /' /etc/default/grub
