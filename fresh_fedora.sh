@@ -81,7 +81,7 @@ echo "Setting fonts..."
 sudo -u $REAL_USER XDG_RUNTIME_DIR=/run/user/$REAL_UID DISPLAY=:0 gsettings set org.gnome.desktop.interface font-name 'Adwaita Sans 12' || echo "Failed to set interface font"
 sudo -u $REAL_USER XDG_RUNTIME_DIR=/run/user/$REAL_UID DISPLAY=:0 gsettings set org.gnome.desktop.interface document-font-name 'Adwaita Sans 12' || echo "Failed to set document font"
 sudo -u $REAL_USER XDG_RUNTIME_DIR=/run/user/$REAL_UID DISPLAY=:0 gsettings set org.gnome.desktop.interface monospace-font-name 'Adwaita Mono 16' || echo "Failed to set monospace font"
-sudo -u $REAL_USER XDG_RUNTIME_DIR=/run/user/$REAL_UID DISPLAY=:0 gsettings set org.gnome.desktop.interface text-scaling-factor 1.2
+sudo -u $REAL_USER XDG_RUNTIME_DIR=/run/user/$REAL_UID DISPLAY=:0 gsettings set org.gnome.desktop.interface text-scaling-factor 1.15
 
 # Add missing window buttons 
 echo "Setting window buttons..."
@@ -151,6 +151,7 @@ fzf \
 gimp \
 gnome-firmware \
 gnome-tweaks \
+libavcodec-freeworld\ 
 nvim \
 ollama \
 ptyxis \
