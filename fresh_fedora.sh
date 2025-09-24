@@ -177,16 +177,14 @@ systemctl enable docker || echo "Failed to enable docker service"
 systemctl start docker || echo "Failed to start docker service"
 
 # Install Nvidia drivers
-# echo "Installing NVIDIA drivers..."
-# dnf install -y --skip-unavailable \
-# akmod-nvidia \
-# xorg-x11-drv-nvidia-cuda \
-# xorg-x11-drv-nvidia-power \
-# nvidia-vaapi-driver \
-# vdpauinfo \
-# xorg-x11-drv-nvidia-cuda-libs \
-# kernel-headers \
-# kernel-devel
+echo "Installing NVIDIA drivers..."
+dnf install -y --skip-unavailable \
+    akmod-nvidia \
+    xorg-x11-drv-nvidia-cuda \ # sterownik CUDA
+    nvidia-vaapi-driver \
+    vdpauinfo \
+    kernel-headers \
+    kernel-devel
 
 echo "Enabling RPM Fusion repositories, needed for NVIDIA drivers... "
 dnf install -y https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm 2>/dev/null || echo "RPM Fusion already installed"
@@ -206,28 +204,27 @@ echo "Setting up Flatpak and installing apps..."
 echo "Setting up Flatpak repository..."
 sudo -u $REAL_USER XDG_RUNTIME_DIR=/run/user/$REAL_UID HOME=$REAL_HOME flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
 
-# Install Flatpak apps one by one with error handling
-echo "Installing Discord..."
-sudo -u $REAL_USER XDG_RUNTIME_DIR=/run/user/$REAL_UID HOME=$REAL_HOME flatpak install -y flathub com.discordapp.Discord || echo "Failed to install Discord"
+# List of apps to install
+apps=(
+    com.discordapp.Discord
+    io.dbeaver.DBeaverCommunity
+    com.mattjakeman.ExtensionManager
+    app.zen_browser.zen
+    md.obsidian.Obsidian
+)
 
-echo "Installing DBeaver..."
-sudo -u $REAL_USER XDG_RUNTIME_DIR=/run/user/$REAL_UID HOME=$REAL_HOME flatpak install -y flathub io.dbeaver.DBeaverCommunity || echo "Failed to install DBeaver"
-
-echo "Installing Extension Manager..."
-sudo -u $REAL_USER XDG_RUNTIME_DIR=/run/user/$REAL_UID HOME=$REAL_HOME flatpak install -y flathub com.mattjakeman.ExtensionManager || echo "Failed to install Extension Manager"
-
-echo "Installing Zen..."
-sudo -u $REAL_USER XDG_RUNTIME_DIR=/run/user/$REAL_UID HOME=$REAL_HOME flatpak install -y flathub app.zen_browser.zen || echo "Failed to install Zen"
-
-echo "Installing Obsidian..."
-sudo -u $REAL_USER XDG_RUNTIME_DIR=/run/user/$REAL_UID HOME=$REAL_HOME flatpak install -y flathub md.obsidian.Obsidian || echo "Failed to install Obsidian"
+# Install apps with error handling
+for app in "${apps[@]}"; do
+    echo "Installing $app..."
+    sudo -u $REAL_USER XDG_RUNTIME_DIR=/run/user/$REAL_UID HOME=$REAL_HOME flatpak install -y flathub "$app" || echo "Failed to install $app"
+done
 
 # Fix Lofree keyboard
 # echo 2 | tee /sys/module/hid_apple/parameters/fnmode
 # sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="/GRUB_CMDLINE_LINUX_DEFAULT="hid_apple.fnmode=2 /' /etc/default/grub
 # grub2-mkconfig -o /boot/grub2/grub.cfg
 
-# Fix brightness issue
+# Fix brightness issue (if needed)
 # grep -q acpi_backlight=vendor /etc/default/grub || \
 # sed -i '/^GRUB_CMDLINE_LINUX=/ s/"$/ acpi_backlight=vendor"/' /etc/default/grub
 # grub2-mkconfig -o /boot/grub2/grub.cfg
