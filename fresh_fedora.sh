@@ -143,19 +143,29 @@ dnf upgrade -y
 
 echo "Installing essential applications..."
 dnf install -y --skip-unavailable \
+asciiquarium \
+btop \
+cbonsai \
 cmatrix \
 code \
 docker \
 fastfetch \
 fzf \
+gcc \
 gimp \
+git \
+git-lfs \
 gnome-firmware \
 gnome-tweaks \
-libavcodec-freeworld\ 
+go \
+kolourpaint \
+libavcodec-freeworld\
+make \ 
 nvim \
 ollama \
 ptyxis \
 python3-pip \
+rclone-browser \
 sox \
 stacer \
 steam \
@@ -163,7 +173,9 @@ thunderbird \
 tldr \
 vim \
 xrandr \
-zsh
+zsh \
+zsh-autosuggestions \
+
 
 # Add Z-Shell to /etc/shells
 echo "/usr/bin/zsh" | tee -a /etc/shells
