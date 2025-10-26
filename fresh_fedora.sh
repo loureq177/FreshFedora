@@ -165,6 +165,7 @@ nvim \
 ollama \
 ptyxis \
 python3-pip \
+rclone \
 rclone-browser \
 sox \
 stacer \
