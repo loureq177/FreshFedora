@@ -7,29 +7,47 @@ A comprehensive script to set up a fresh install of Fedora Linux with personaliz
 ### GNOME Settings
 
 - ✅ Dark mode (Adwaita-dark theme)
-- ✅ 24-hour time format  
+- ✅ 24-hour time format
 - ✅ Custom fonts (Adwaita Sans 12, JetBrainsMono Nerd Font Mono 16)
 - ✅ Window buttons (minimize, maximize, close)
 - ✅ Battery percentage display
 - ✅ Caps Lock remapped to Escape
 - ✅ Text scaling (1.10)
+- ✅ Keyboard repeat delay tweak
+
+### Audio
+
+- ✅ Sets default microphone volume to 30%
 
 ### System Updates & Cleanup
 
-- ✅ System upgrade
-- ✅ Remove unnecessary GNOME applications (cheese, firefox, gnome-contacts, gnome-maps, gnome-tour, orca, simple-scan, yelp)
+- ✅ Firmware update check (via `fwupdmgr`)
+- ✅ System upgrade (`dnf upgrade`)
+- ✅ Remove unnecessary GNOME applications (cheese, firefox, gnome-calendar, gnome-contacts, gnome-maps, gnome-tour, orca, simple-scan, yelp)
+- ✅ Autoremove + DNF cache cleanup
 - ✅ Install essential applications
 
 ### Applications Installed
 
-- **Communication**: Discord (Flatpak)
-- **Development**: VS Code, vim, nvim, git-lfs, gcc, make, go, docker, python3-pip, uv, DBeaver (Flatpak)
-- **Media**: GIMP, Steam
-- **System**: gnome-tweaks, gnome-firmware, Extension Manager (Flatpak), stacer, xrandr
-- **Terminal**: zsh, zsh-autosuggestions, oh-my-zsh, fzf, fastfetch, btop, cmatrix, asciiquarium, cbonsai
-- **Browsers**: Zen Browser (Flatpak)
-- **Productivity**: Obsidian (Flatpak)
-- **Other**: ollama, sox, rclone, rclone-browser, tldr
+#### Installed via DNF
+
+- **Development**: VS Code (`code`), vim, nvim, git-lfs, gcc, make, go, docker, python3-pip
+- **Media**: GIMP, Steam, sox
+- **System**: gnome-tweaks, gnome-firmware, stacer
+- **Terminal**: zsh, zsh-autosuggestions, fzf, starship, fastfetch, btop, cmatrix, asciiquarium, cbonsai, tldr
+- **Other**: ollama, rclone, rclone-browser
+
+#### Installed via Flatpak (Flathub)
+
+- Zen Browser
+- DBeaver Community
+- Extension Manager
+- Obsidian
+- Spotify
+
+#### Installed via installer script
+
+- `uv` (Astral installer)
 
 ### Fonts
 
@@ -39,10 +57,9 @@ A comprehensive script to set up a fresh install of Fedora Linux with personaliz
 ### Shell Setup
 
 - ✅ Zsh installation and configuration
-- ✅ Oh-my-zsh installation  
-- ✅ Zsh autosuggestions plugin
+- ✅ Oh-my-zsh installation
 - ✅ Zsh set as default shell
-- ✅ as default shell
+- ✅ Starship prompt installed and enabled for Zsh
 
 ### Graphics & Drivers
 
@@ -57,6 +74,13 @@ A comprehensive script to set up a fresh install of Fedora Linux with personaliz
 - ✅ Docker service enabled and started
 
 ### Installation
+
+#### Prerequisites
+
+- Fedora Workstation
+- Working internet connection
+- `sudo` access for your user
+- On a typical Fedora Workstation install you already have: `curl`, `unzip`, `flatpak`, `fwupdmgr`, `gsettings`, `wpctl`
 
 1. **Download the script:**
 
@@ -85,10 +109,10 @@ A comprehensive script to set up a fresh install of Fedora Linux with personaliz
 
 ## Logging
 
-All installation steps are logged to: `/var/log/fedora-setup.log`
+All installation steps are logged to: `/tmp/fedora-setup.log`
 
 View logs with:
 
 ```bash
-sudo cat /var/log/fedora-setup.log
+cat /tmp/fedora-setup.log
 ```
