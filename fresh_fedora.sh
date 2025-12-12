@@ -1,148 +1,168 @@
-#! /bin/bash
+#! /usr/bin/env bash
+set -euo pipefail
 
-# Prevent shell switching during script execution
-export SHELL=/bin/bash
-export RUNZSH=no
-
-if [ "$EUID" -ne 0 ]; then
-  echo "Please, run again as a superuser"
+# =====================[ USER CHECK ]===================== #
+if [ "$EUID" -eq 0 ]; then
+  echo -e "\033[0;31m[ERROR] Please run as normal user (DO NOT USE SUDO to start script)"
   exit 1
 fi
 
-# Get the real user (not root)
-REAL_USER=${SUDO_USER:-$(logname)}
-REAL_HOME=$(eval echo ~$REAL_USER)
-REAL_UID=$(id -u $REAL_USER)
+sudo -v
+while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
 
-echo "Running script for user: $REAL_USER"
-echo "User home directory: $REAL_HOME"
-echo "User UID: $REAL_UID"
+# =====================[ COLORS & LOGGING ]===================== #
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
 
-# Fix permissions for XDG runtime directory if needed
-if [ ! -d "/run/user/$REAL_UID" ]; then
-    mkdir -p "/run/user/$REAL_UID"
-    chown $REAL_USER:$REAL_USER "/run/user/$REAL_UID"
-    chmod 700 "/run/user/$REAL_UID"
+LOG_FILE="/tmp/fedora-setup.log"
+exec > >(tee -a "$LOG_FILE") 2>&1
+
+log_info()  { echo -e "${BLUE}[INFO]${NC}  $*"; sleep 2; }
+log_ok()    { echo -e "${GREEN}[OK]${NC}    $*"; sleep 2; }
+log_warn()  { echo -e "${YELLOW}[WARN]${NC}  $*"; sleep 2; }
+log_error() { echo -e "${RED}[ERROR]${NC} $*"; sleep 2; }
+
+log_info "Running setup for user: $USER"
+log_info "Home directory: $HOME"
+
+# =====================[ GIT SETUP ]=================== #
+log_info "Setting up git..."
+
+git config --global init.defaultBranch main
+
+CURRENT_NAME=$(git config --global --get user.name || true)
+CURRENT_EMAIL=$(git config --global --get user.email || true)
+
+if [[ -n "$CURRENT_NAME" ]] && [[ -n "$CURRENT_EMAIL" ]]; then
+  log_info "Git is already configured as: $CURRENT_NAME <$CURRENT_EMAIL> — skipping setup."
+else
+  if [[ -z "$CURRENT_NAME" ]]; then
+    read -p "Enter your nick for git config --global user.name: " username
+    git config --global user.name "$username"
+  fi
+
+  if [[ -z "$CURRENT_EMAIL" ]]; then
+    read -p "Enter your email for git config --global user.email: " email
+    git config --global user.email "$email"
+  fi
+
+  log_ok "Git has been correctly set up."
 fi
 
-# Fix SELinux contexts to prevent permission denied errors
-echo "Fixing SELinux contexts..."
-restorecon -R "/run/user/$REAL_UID" 2>/dev/null || true
-setsebool -P use_fusefs_home_dirs 1 2>/dev/null || true
+# =========================[ DRIVER UPDATE ]========================= #
+log_info "Updating drivers..."
 
-echo "Configuring GNOME settings..."
-# Wait for GNOME to be available
-sleep 2
+sudo fwupdmgr refresh --force || true
+sudo fwupdmgr get-updates || true
+sudo fwupdmgr update --assume-yes || true
 
-# Prevent shell switching during script execution
-export SHELL=/bin/bash
-export RUNZSH=no
+log_ok "Drivers updated check complete!"
 
-if [ "$EUID" -ne 0 ]; then
-  echo "Please, run again as a superuser"
-  exit 1
+# =====================[ JETBRAINS MONO NERD FONT ]===================== #
+log_info "Installing JetBrains Mono Nerd Font..."
+
+FONT_URL="https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.zip"
+FONT_DIR="/usr/share/fonts/JetBrainsMonoNerd"
+
+if [ ! -d "$FONT_DIR" ]; then
+  sudo mkdir -p "$FONT_DIR"
+  curl -fLo /tmp/JetBrainsMono.zip "$FONT_URL" \
+    && sudo unzip -qo /tmp/JetBrainsMono.zip -d "$FONT_DIR" \
+    && sudo fc-cache -f -v \
+    && log_ok "JetBrains Mono Nerd Font installed." \
+    || log_warn "Failed to install JetBrains Mono Nerd Font."
+else
+  log_info "JetBrains Mono Nerd Font already installed — skipping."
 fi
 
-# Get the real user (not root)
-REAL_USER=${SUDO_USER:-$(logname)}
-REAL_HOME=$(eval echo ~$REAL_USER)
-REAL_UID=$(id -u $REAL_USER)
+# =====================[ GNOME CONFIGURATION ]===================== #
+log_info "Configuring GNOME environment..."
 
-echo "Running script for user: $REAL_USER"
-echo "User home directory: $REAL_HOME"
-echo "User UID: $REAL_UID"
+log_info "Applying GNOME preferences..."
+gsettings set org.gnome.desktop.interface gtk-theme 'Adwaita-dark' || log_warn "GTK theme failed"
+gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark' || log_warn "Color scheme failed"
+gsettings set org.gnome.desktop.interface font-name 'Adwaita Sans 12'
+gsettings set org.gnome.desktop.interface document-font-name 'Adwaita Sans 12'
+gsettings set org.gnome.desktop.interface monospace-font-name 'JetBrainsMono Nerd Font Mono 16' \
+  && log_ok "Default monospace font set to JetBrainsMono Nerd Font Mono." \
+  || log_warn "Failed to set JetBrains Mono Nerd Font as default."
+gsettings set org.gnome.desktop.interface text-scaling-factor 1.10
+gsettings set org.gnome.desktop.wm.preferences button-layout 'appmenu:minimize,maximize,close'
+gsettings set org.gnome.desktop.interface show-battery-percentage true
+gsettings set org.gnome.desktop.input-sources xkb-options "['caps:escape']"
+gsettings set org.gnome.desktop.interface clock-format '24h'
+gsettings set org.gnome.desktop.peripherals.keyboard delay 200
+log_ok "GNOME settings applied."
 
-# Fix permissions for XDG runtime directory if needed
-if [ ! -d "/run/user/$REAL_UID" ]; then
-    mkdir -p "/run/user/$REAL_UID"
-    chown $REAL_USER:$REAL_USER "/run/user/$REAL_UID"
-    chmod 700 "/run/user/$REAL_UID"
-fi
+# =====================[ AUDIO ]===================== #
+log_info "Setting microphone volume..."
+wpctl set-volume @DEFAULT_AUDIO_SOURCE@ 0.3 && log_ok "Microphone set to 30%" || log_warn "Could not set volume"
 
-# Fix SELinux contexts to prevent permission denied errors
-echo "Fixing SELinux contexts..."
-restorecon -R "/run/user/$REAL_UID" 2>/dev/null || true
-setsebool -P use_fusefs_home_dirs 1 2>/dev/null || true
-
-echo "Configuring GNOME settings..."
-# Wait for GNOME to be available
-sleep 2
-
-# Set dark-mode
-echo "Setting dark theme..."
-sudo -u $REAL_USER XDG_RUNTIME_DIR=/run/user/$REAL_UID DISPLAY=:0 gsettings set org.gnome.desktop.interface gtk-theme 'Adwaita-dark' || echo "Failed to set GTK theme"
-sudo -u $REAL_USER XDG_RUNTIME_DIR=/run/user/$REAL_UID DISPLAY=:0 gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark' || echo "Failed to set color scheme"
-echo "Setting dark theme..."
-sudo -u $REAL_USER XDG_RUNTIME_DIR=/run/user/$REAL_UID DISPLAY=:0 gsettings set org.gnome.desktop.interface gtk-theme 'Adwaita-dark' || echo "Failed to set GTK theme"
-sudo -u $REAL_USER XDG_RUNTIME_DIR=/run/user/$REAL_UID DISPLAY=:0 gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark' || echo "Failed to set color scheme"
-
-# Set Fonts and sizes
-echo "Setting fonts..."
-sudo -u $REAL_USER XDG_RUNTIME_DIR=/run/user/$REAL_UID DISPLAY=:0 gsettings set org.gnome.desktop.interface font-name 'Adwaita Sans 12' || echo "Failed to set interface font"
-sudo -u $REAL_USER XDG_RUNTIME_DIR=/run/user/$REAL_UID DISPLAY=:0 gsettings set org.gnome.desktop.interface document-font-name 'Adwaita Sans 12' || echo "Failed to set document font"
-sudo -u $REAL_USER XDG_RUNTIME_DIR=/run/user/$REAL_UID DISPLAY=:0 gsettings set org.gnome.desktop.interface monospace-font-name 'Adwaita Mono 16' || echo "Failed to set monospace font"
-sudo -u $REAL_USER XDG_RUNTIME_DIR=/run/user/$REAL_UID DISPLAY=:0 gsettings set org.gnome.desktop.interface text-scaling-factor 1.15
-
-# Add missing window buttons 
-echo "Setting window buttons..."
-sudo -u $REAL_USER XDG_RUNTIME_DIR=/run/user/$REAL_UID DISPLAY=:0 gsettings set org.gnome.desktop.wm.preferences button-layout 'appmenu:minimize,maximize,close' || echo "Failed to set window buttons"
-echo "Setting window buttons..."
-sudo -u $REAL_USER XDG_RUNTIME_DIR=/run/user/$REAL_UID DISPLAY=:0 gsettings set org.gnome.desktop.wm.preferences button-layout 'appmenu:minimize,maximize,close' || echo "Failed to set window buttons"
-
-# Add battery percentage
-echo "Setting battery percentage..."
-sudo -u $REAL_USER XDG_RUNTIME_DIR=/run/user/$REAL_UID DISPLAY=:0 gsettings set org.gnome.desktop.interface show-battery-percentage true || echo "Failed to set battery percentage"
-echo "Setting battery percentage..."
-sudo -u $REAL_USER XDG_RUNTIME_DIR=/run/user/$REAL_UID DISPLAY=:0 gsettings set org.gnome.desktop.interface show-battery-percentage true || echo "Failed to set battery percentage"
-
-# Remap caps-lock to escape
-echo "Setting caps-lock to escape..."
-sudo -u $REAL_USER XDG_RUNTIME_DIR=/run/user/$REAL_UID DISPLAY=:0 gsettings set org.gnome.desktop.input-sources xkb-options "['caps:escape']" || echo "Failed to set caps-lock mapping"
-echo "Setting caps-lock to escape..."
-sudo -u $REAL_USER XDG_RUNTIME_DIR=/run/user/$REAL_UID DISPLAY=:0 gsettings set org.gnome.desktop.input-sources xkb-options "['caps:escape']" || echo "Failed to set caps-lock mapping"
-
-# Set time format to 24h
-echo "Setting 24h time format..."
-sudo -u $REAL_USER XDG_RUNTIME_DIR=/run/user/$REAL_UID DISPLAY=:0 gsettings set org.gnome.desktop.interface clock-format '24h' || echo "Failed to set clock format"
-
-# Set microphone volume to 30%
-echo "Setting microphone volume..."
-sudo -u $REAL_USER XDG_RUNTIME_DIR=/run/user/$REAL_UID PULSE_RUNTIME_PATH=/run/user/$REAL_UID/pulse pactl set-source-volume alsa_input.pci-0000_06_00.6.analog-stereo 30% || echo "Failed to set microphone volume"
-
-echo "Adding Visual Studio Code repo..."
-echo "Setting 24h time format..."
-sudo -u $REAL_USER XDG_RUNTIME_DIR=/run/user/$REAL_UID DISPLAY=:0 gsettings set org.gnome.desktop.interface clock-format '24h' || echo "Failed to set clock format"
-
-# Set microphone volume to 30%
-echo "Setting microphone volume..."
-sudo -u $REAL_USER XDG_RUNTIME_DIR=/run/user/$REAL_UID PULSE_RUNTIME_PATH=/run/user/$REAL_UID/pulse pactl set-source-volume alsa_input.pci-0000_06_00.6.analog-stereo 30% || echo "Failed to set microphone volume"
-
-echo "Adding Visual Studio Code repo..."
-rpm --import https://packages.microsoft.com/keys/microsoft.asc
-sh -c 'echo -e "[code]
+# =====================[ DNF REPOS & UPDATES ]===================== #
+log_info "Adding VS Code repository..."
+if [ ! -f /etc/yum.repos.d/vscode.repo ]; then
+  sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
+  cat <<EOF | sudo tee /etc/yum.repos.d/vscode.repo > /dev/null
+[code]
 name=Visual Studio Code
 baseurl=https://packages.microsoft.com/yumrepos/vscode
 enabled=1
 gpgcheck=1
-gpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/vscode.repo'
+gpgkey=https://packages.microsoft.com/keys/microsoft.asc
+EOF
+  log_ok "VS Code repo added."
+else
+  log_info "VS Code repository already exists — skipping."
+fi
 
-echo "Removing unnecessary applications..."
-dnf remove -y \
+log_info "Enabling RPM Fusion repositories..."
+sudo dnf install -y https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm \
+               https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm || log_warn "RPM Fusion already installed"
+log_ok "RPM Fusion enabled."
+
+log_info "Removing unnecessary applications..."
+sudo dnf remove -y \
 cheese \
+firefox \
+gnome-calendar \
 gnome-contacts \
 gnome-maps \
 gnome-tour \
 orca \
-rhythmbox \
-totem \
 simple-scan \
-yelp \
+yelp
+log_ok "Unnecessary applications removed."
 
-echo "Updating system..."
-dnf upgrade -y
+log_info "Updating system..."
+sudo dnf upgrade -y
+log_ok "System up to date."
 
-echo "Installing essential applications..."
-dnf install -y --skip-unavailable \
+# =====================[ FLATPAK SETUP ]===================== #
+log_info "Setting up Flatpak repository..."
+
+flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+log_ok "Flathub repository ready."
+
+flatpak_apps=(
+  app.zen_browser.zen
+  io.dbeaver.DBeaverCommunity
+  com.mattjakeman.ExtensionManager
+  md.obsidian.Obsidian
+  com.spotify.Client
+)
+
+log_info "Installing Flatpak applications (batch mode)..."
+
+flatpak install -y --system flathub "${flatpak_apps[@]}" \
+  && log_ok "All Flatpak applications installed successfully." \
+  || log_warn "There were issues installing some Flatpak applications."
+
+# =====================[ INSTALL PACKAGES ]===================== #
+log_info "Installing essential applications..."
+sudo dnf install -y --skip-unavailable \
 asciiquarium \
 btop \
 cbonsai \
@@ -153,109 +173,99 @@ fastfetch \
 fzf \
 gcc \
 gimp \
-git \
 git-lfs \
 gnome-firmware \
 gnome-tweaks \
 go \
-kolourpaint \
-libavcodec-freeworld\
-make \ 
+libavcodec-freeworld \
+make \
 nvim \
 ollama \
-ptyxis \
 python3-pip \
 rclone \
 rclone-browser \
 sox \
 stacer \
 steam \
-thunderbird \
 tldr \
 vim \
-xrandr \
 zsh \
-zsh-autosuggestions \
+zsh-autosuggestions
+log_ok "Essential applications installed."
 
+# =====================[ DOCKER SETUP ]===================== #
+log_info "Configuring Docker..."
+sudo usermod -aG docker $USER || log_warn "Failed to add user to docker group"
+sudo systemctl enable docker || log_warn "Failed to enable docker"
+sudo systemctl start docker || log_warn "Failed to start docker"
+log_ok "Docker configured."
 
-# Add Z-Shell to /etc/shells
-echo "/usr/bin/zsh" | tee -a /etc/shells
-
-# Add user to docker group (use real user, not root)
-echo "Adding $REAL_USER to docker group..."
-usermod -aG docker $REAL_USER || echo "Failed to add user to docker group"
-
-# Start and enable docker service
-systemctl enable docker || echo "Failed to enable docker service"
-systemctl start docker || echo "Failed to start docker service"
-
-# Install Nvidia drivers
-echo "Installing NVIDIA drivers..."
-dnf install -y --skip-unavailable \
+# =====================[ NVIDIA DRIVERS ]===================== #
+log_info "Installing NVIDIA drivers..."
+sudo dnf install -y --skip-unavailable \
     akmod-nvidia \
-    xorg-x11-drv-nvidia-cuda \ # sterownik CUDA
-    nvidia-vaapi-driver \
+    xorg-x11-drv-nvidia-cuda \
     vdpauinfo \
-    kernel-headers \
     kernel-devel
+log_ok "NVIDIA drivers installed."
 
-echo "Enabling RPM Fusion repositories, needed for NVIDIA drivers... "
-dnf install -y https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm 2>/dev/null || echo "RPM Fusion already installed"
+# =====================[ UV INSTALLER ]===================== #
+log_info "Installing uv for Python..."
+if command -v uv &> /dev/null; then
+    log_info "uv already installed — skipping."
+else
+    log_info "Installing uv..."
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+fi
 
-echo "Installing uv for Python..."
-sudo -u $REAL_USER XDG_RUNTIME_DIR=/run/user/$REAL_UID HOME=$REAL_HOME SHELL=/bin/bash bash -c 'curl -LsSf https://astral.sh/uv/install.sh | sh' || echo "Failed to install uv"
+# =====================[ OH-MY-ZSH ]===================== #
+log_info "Installing Oh My Zsh..."
+if [ ! -d "$HOME/.oh-my-zsh" ]; then
+    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended \
+    && cp ~/.oh-my-zsh/templates/zshrc.zsh-template ~/.zshrc \
+    || log_warn "Failed to install Oh-My-Zsh"
+else
+  log_info "Oh My Zsh already installed — skipping."
+fi
 
-echo "Installing and configuring Z-Shell and Oh-My-Zsh..."
-sudo -u $REAL_USER XDG_RUNTIME_DIR=/run/user/$REAL_UID HOME=$REAL_HOME SHELL=/bin/bash RUNZSH=no bash -c 'sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended' || echo "Failed to install Oh-My-Zsh"
+ZSH_PATH=$(command -v zsh)
+grep -qxF "$ZSH_PATH" /etc/shells || echo "$ZSH_PATH" | sudo tee -a /etc/shells
+sudo chsh -s "$ZSH_PATH" "$USER"
+log_ok "Zsh configured."
 
-# Change default shell to zsh for the user
-chsh -s $(which zsh) $REAL_USER
+# =====================[ STARSHIP PROMPT ]===================== #
+log_info "Installing Starship Prompt..."
 
-echo "Setting up Flatpak and installing apps..."
+if ! command -v starship &>/dev/null; then
+  curl -sS https://starship.rs/install.sh | sh -s -- -y
+  log_ok "Starship binary installed."
+else
+  log_info "Starship already installed — skipping binary download."
+fi
 
-# Setup Flatpak repository
-echo "Setting up Flatpak repository..."
-sudo -u $REAL_USER XDG_RUNTIME_DIR=/run/user/$REAL_UID HOME=$REAL_HOME flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+STARSHIP_INIT='eval "$(starship init zsh)"'
 
-# List of apps to install
-apps=(
-    com.discordapp.Discord
-    io.dbeaver.DBeaverCommunity
-    com.mattjakeman.ExtensionManager
-    app.zen_browser.zen
-    md.obsidian.Obsidian
-)
+if ! grep -qF "$STARSHIP_INIT" "$HOME/.zshrc"; then
+  echo "" >> "$HOME/.zshrc"
+  echo "$STARSHIP_INIT" >> "$HOME/.zshrc"
+  log_ok "Added Starship init to .zshrc"
+else
+  log_info "Starship already configured in .zshrc — skipping."
+fi
 
-# Install apps with error handling
-for app in "${apps[@]}"; do
-    echo "Installing $app..."
-    sudo -u $REAL_USER XDG_RUNTIME_DIR=/run/user/$REAL_UID HOME=$REAL_HOME flatpak install -y flathub "$app" || echo "Failed to install $app"
-done
-
-# Fix Lofree keyboard
-# echo 2 | tee /sys/module/hid_apple/parameters/fnmode
-# sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="/GRUB_CMDLINE_LINUX_DEFAULT="hid_apple.fnmode=2 /' /etc/default/grub
-# grub2-mkconfig -o /boot/grub2/grub.cfg
-
-# Fix brightness issue (if needed)
-# grep -q acpi_backlight=vendor /etc/default/grub || \
-# sed -i '/^GRUB_CMDLINE_LINUX=/ s/"$/ acpi_backlight=vendor"/' /etc/default/grub
-# grub2-mkconfig -o /boot/grub2/grub.cfg
-
-echo "Cleaning up..."
-dnf autoremove -y
-dnf clean all -y
+# =====================[ CLEANUP ]===================== #
+log_info "Cleaning up..."
+sudo dnf autoremove -y
+sudo dnf clean all -y
+log_ok "System cleanup complete."
 
 echo ""
-echo "========================================"
-echo "INSTALLATION COMPLETED!"
-echo "========================================"
+# =====================[ FINISH ]===================== #
 echo ""
-echo "Next steps:"
-echo "1. Reboot your system for NVIDIA drivers to load properly"
-echo "2. Your default shell has been changed to zsh - it will take effect after logout-login or reboot"
+echo -e "${GREEN}========================================${NC}"
+echo -e "${GREEN} INSTALLATION COMPLETED SUCCESSFULLY!${NC}"
+echo -e "${GREEN}========================================${NC}"
 echo ""
-echo "Notes:"
-echo "- NVIDIA drivers require a reboot to work properly"
-echo "- If brightness is still flickering, try: sudo systemctl disable gdm && sudo systemctl enable gdm"
-echo "- For GNOME extensions, use Extension Manager or visit https://extensions.gnome.org/"
+echo "Logs saved to: $LOG_FILE"
+echo ""
+echo "Reboot your system for NVIDIA drivers to load properly."
