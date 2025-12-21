@@ -133,6 +133,7 @@ gnome-maps \
 gnome-tour \
 orca \
 simple-scan \
+"libreoffice*" \
 yelp
 log_ok "Unnecessary applications removed."
 
@@ -252,6 +253,25 @@ if ! grep -qF "$STARSHIP_INIT" "$HOME/.zshrc"; then
 else
   log_info "Starship already configured in .zshrc — skipping."
 fi
+
+# =====================[ MOUNTING EXTERNAL HOME ]===================== #
+log_info "Configuring 512 GB drive as /home"
+HOME_UUID="688f55cd-90c1-4766-b4f9-5e1a812fe16a"
+FSTAB_ENTRY="UUID=$HOME_UUID /home ext4 defaults 0 2"
+
+if ! grep -q "$HOME_UUID" /etc/fstab; then
+    log_info "Dodaję partycję do /etc/fstab..."
+    echo "$FSTAB_ENTRY" >> /etc/fstab
+fi
+
+systemctl daemon-reload
+mount -a
+
+log_info "Fixing permissions for user: $REAL_USER"
+chown -R "$REAL_USER:$REAL_GID" "/home/$REAL_USER"
+chmod 700 "/home/$REAL_USER"
+
+log_info "512 GB Drive successfully mounted as \"/home\""
 
 # =====================[ CLEANUP ]===================== #
 log_info "Cleaning up..."
