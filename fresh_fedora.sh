@@ -91,6 +91,7 @@ gsettings set org.gnome.desktop.interface monospace-font-name 'JetBrainsMono Ner
   || log_warn "Failed to set JetBrains Mono Nerd Font as default."
 gsettings set org.gnome.desktop.interface text-scaling-factor 1.10
 gsettings set org.gnome.desktop.wm.preferences button-layout 'appmenu:minimize,maximize,close'
+gsettings set org.gnome.desktop.wm.preferences raise-on-focus true
 gsettings set org.gnome.desktop.interface show-battery-percentage true
 gsettings set org.gnome.desktop.input-sources xkb-options "['caps:escape']"
 gsettings set org.gnome.desktop.interface clock-format '24h'
