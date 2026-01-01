@@ -195,6 +195,19 @@ zsh \
 zsh-autosuggestions
 log_ok "Essential applications installed."
 
+# =====================[ GROUP INSTALL ]===================== #
+sudo dnf group install python-science -y
+
+# =====================[ BREW INSTALL ]===================== #
+sudo dnf group install development-tools -y
+sudo dnf install procps-ng curl file -y
+NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+if ! grep -q "brew shellenv" "$HOME/.zshrc"; then
+    log_info "Dodaję Homebrew do .zshrc..."
+    (echo; echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"') >> "$HOME/.zshrc"
+fi
+eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+
 # =====================[ DOCKER SETUP ]===================== #
 log_info "Configuring Docker..."
 sudo usermod -aG docker $USER || log_warn "Failed to add user to docker group"
