@@ -166,7 +166,9 @@ flatpak install -y --system flathub "${flatpak_apps[@]}" \
 log_info "Installing essential applications..."
 sudo dnf install -y --skip-unavailable \
 asciiquarium \
+bat \
 btop \
+cargo \
 cbonsai \
 cmatrix \
 code \
@@ -197,6 +199,9 @@ log_ok "Essential applications installed."
 
 # =====================[ GROUP INSTALL ]===================== #
 sudo dnf group install python-science -y
+
+# =====================[ CARGO INSTALL ]===================== #
+cargo install eza
 
 # =====================[ BREW INSTALL ]===================== #
 sudo dnf group install development-tools -y
@@ -232,21 +237,6 @@ else
     log_info "Installing uv..."
     curl -LsSf https://astral.sh/uv/install.sh | sh
 fi
-
-# =====================[ OH-MY-ZSH ]===================== #
-log_info "Installing Oh My Zsh..."
-if [ ! -d "$HOME/.oh-my-zsh" ]; then
-    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended \
-    && cp ~/.oh-my-zsh/templates/zshrc.zsh-template ~/.zshrc \
-    || log_warn "Failed to install Oh-My-Zsh"
-else
-  log_info "Oh My Zsh already installed — skipping."
-fi
-
-ZSH_PATH=$(command -v zsh)
-grep -qxF "$ZSH_PATH" /etc/shells || echo "$ZSH_PATH" | sudo tee -a /etc/shells
-sudo chsh -s "$ZSH_PATH" "$USER"
-log_ok "Zsh configured."
 
 # =====================[ STARSHIP PROMPT ]===================== #
 log_info "Installing Starship Prompt..."
