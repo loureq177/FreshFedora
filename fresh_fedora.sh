@@ -165,36 +165,38 @@ flatpak install -y --system flathub "${flatpak_apps[@]}" \
 # =====================[ INSTALL PACKAGES ]===================== #
 log_info "Installing essential applications..."
 sudo dnf install -y --skip-unavailable \
-asciiquarium \
-bat \
-btop \
-cargo \
-cbonsai \
-cmatrix \
-code \
-docker \
-fastfetch \
-fzf \
-gcc \
-gimp \
-git-lfs \
-gnome-firmware \
-gnome-tweaks \
-go \
-libavcodec-freeworld \
-make \
-nvim \
-ollama \
-python3-pip \
-rclone \
-rclone-browser \
-sox \
-stacer \
-steam \
-tldr \
-vim \
-zsh \
-zsh-autosuggestions
+  asciiquarium \
+  bat \
+  btop \
+  cargo \
+  cbonsai \
+  cmatrix \
+  code \
+  docker \
+  fastfetch \
+  fzf \
+  gcc \
+  gimp \
+  git-lfs \
+  gnome-extensions-app \
+  gnome-firmware \
+  gnome-tweaks \
+  go \
+  libavcodec-freeworld \
+  make \
+  nvim \
+  ollama \
+  python3-pip \
+  rclone \
+  rclone-browser \
+  sox \
+  stacer \
+  steam \
+  stow \
+  tldr \
+  vim \
+  zsh \
+  zsh-autosuggestions
 log_ok "Essential applications installed."
 
 # =====================[ GROUP INSTALL ]===================== #
@@ -212,6 +214,30 @@ if ! grep -q "brew shellenv" "$HOME/.zshrc"; then
     (echo; echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"') >> "$HOME/.zshrc"
 fi
 eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+log_ok "Homebrew installed."
+
+# =====================[ EXTENSTIONS INSTALL ]===================== #
+sudo dnf install -y --skip-unavailable \
+  gnome-shell-extension-blur-my-shell \
+  gnome-shell-extension-caffeine \
+  gnome-shell-extension-drive-menu \
+  gnome-shell-extension-forge \
+  gnome-shell-extension-gsconnect \
+  gnome-shell-extension-system-monitor \
+  gnome-shell-extension-no-overview
+
+# =====================[ EXTENSTIONS ENABLE ]===================== #
+gnome-extensions enable --quiet\
+  blur-my-shell@aunetx || true \
+  forge@jmmaranan.com || true \
+  caffeine@patapon.info || true \
+  gsconnect@andyholmes.github.io || true \
+  drive-menu@gnome-shell-extensions.gcampax.github.com || true \
+  system-monitor@gnome-shell-extensions.gcampax.github.com || true
+  # || true gnome-shell-extension-no-overview
+
+# =====================[ EXTENSTIONS DISABLE ]===================== #
+gnome-extensions disable background-logo@fedorahosted.org || true
 
 # =====================[ DOCKER SETUP ]===================== #
 log_info "Configuring Docker..."
@@ -221,13 +247,24 @@ sudo systemctl start docker || log_warn "Failed to start docker"
 log_ok "Docker configured."
 
 # =====================[ NVIDIA DRIVERS ]===================== #
-log_info "Installing NVIDIA drivers..."
+log_info "Installing NVIDIA drivers for Wayland-only environment..."
 sudo dnf install -y --skip-unavailable \
-    akmod-nvidia \
-    xorg-x11-drv-nvidia-cuda \
-    vdpauinfo \
-    kernel-devel
-log_ok "NVIDIA drivers installed."
+  akmod-nvidia \
+  xorg-x11-drv-nvidia-cuda \
+  nvidia-vaapi-driver \
+  libva-utils \
+  vdpauinfo \
+  kernel-devel \
+  kernel-headers \
+  nvidia-gpu-firmware
+log_info "Enabling NVIDIA power management services..."
+sudo systemctl enable nvidia-suspend.service
+sudo systemctl enable nvidia-hibernate.service
+sudo systemctl enable nvidia-resume.service
+log_info "Waiting for NVIDIA kernel module to build (this may take a few minutes)..."
+sudo akmods --force
+sudo dracut -f
+log_ok "NVIDIA drivers installed and compiled. Services enabled for stability."
 
 # =====================[ UV INSTALLER ]===================== #
 log_info "Installing uv for Python..."
