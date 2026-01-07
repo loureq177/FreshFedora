@@ -133,6 +133,7 @@ gnome-contacts \
 gnome-maps \
 gnome-tour \
 orca \
+ptyxis \
 simple-scan \
 "libreoffice*" \
 yelp
@@ -162,7 +163,7 @@ flatpak install -y --system flathub "${flatpak_apps[@]}" \
   && log_ok "All Flatpak applications installed successfully." \
   || log_warn "There were issues installing some Flatpak applications."
 
-# =====================[ INSTALL PACKAGES ]===================== #
+# =====================[ DNF INSTALL PACKAGES ]===================== #
 log_info "Installing essential applications..."
 sudo dnf install -y --skip-unavailable \
   asciiquarium \
@@ -202,10 +203,10 @@ log_ok "Essential applications installed."
 # =====================[ GROUP INSTALL ]===================== #
 sudo dnf group install python-science -y
 
-# =====================[ CARGO INSTALL ]===================== #
+# =====================[ CARGO INSTALL PACKAGES ]===================== #
 cargo install eza
 
-# =====================[ BREW INSTALL ]===================== #
+# =====================[ BREW INSTALL PACKAGES ]===================== #
 sudo dnf group install development-tools -y
 sudo dnf install procps-ng curl file -y
 NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
@@ -215,6 +216,9 @@ if ! grep -q "brew shellenv" "$HOME/.zshrc"; then
 fi
 eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 log_ok "Homebrew installed."
+
+# =====================[ BREW APPS ]===================== #
+brew install ghostty -y
 
 # =====================[ EXTENSTIONS INSTALL ]===================== #
 sudo dnf install -y --skip-unavailable \
@@ -230,6 +234,7 @@ sudo dnf install -y --skip-unavailable \
 gnome-extensions enable --quiet\
   blur-my-shell@aunetx || true \
   forge@jmmaranan.com || true \
+
   caffeine@patapon.info || true \
   gsconnect@andyholmes.github.io || true \
   drive-menu@gnome-shell-extensions.gcampax.github.com || true \
@@ -264,7 +269,7 @@ sudo systemctl enable nvidia-resume.service
 log_info "Waiting for NVIDIA kernel module to build (this may take a few minutes)..."
 sudo akmods --force
 sudo dracut -f
-log_ok "NVIDIA drivers installed and compiled. Services enabled for stability."
+log_ok "NVIDIA drivers installed. Services enabled for stability."
 
 # =====================[ UV INSTALLER ]===================== #
 log_info "Installing uv for Python..."
