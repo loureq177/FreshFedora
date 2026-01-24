@@ -189,6 +189,7 @@ sudo dnf install -y --skip-unavailable \
   steam \
   stow \
   tldr \
+  zoxide \
   zsh \
   zsh-autosuggestions \
   zsh-syntax-highlighting
@@ -204,14 +205,11 @@ cargo install eza
 # =====================[ BREW INSTALL PACKAGES ]===================== #
 NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 if ! grep -q "brew shellenv" "$HOME/.zshrc"; then
-    log_info "Dodaję Homebrew do .zshrc..."
+    log_info "Adding Homebrew to .zshrc..."
     (echo; echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"') >> "$HOME/.zshrc"
 fi
 eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 log_ok "Homebrew installed."
-
-# =====================[ BREW APPS ]===================== #
-brew install ghostty -y
 
 # =====================[ EXTENSTIONS INSTALL ]===================== #
 sudo dnf install -y --skip-unavailable \
