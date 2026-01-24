@@ -54,19 +54,15 @@ fi
 
 # =========================[ DRIVER UPDATE ]========================= #
 log_info "Updating drivers..."
-
 sudo fwupdmgr refresh --force || true
 sudo fwupdmgr get-updates || true
 sudo fwupdmgr update --assume-yes || true
-
 log_ok "Drivers updated check complete!"
 
 # =====================[ JETBRAINS MONO NERD FONT ]===================== #
 log_info "Installing JetBrains Mono Nerd Font..."
-
 FONT_URL="https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.zip"
 FONT_DIR="/usr/share/fonts/JetBrainsMonoNerd"
-
 if [ ! -d "$FONT_DIR" ]; then
   sudo mkdir -p "$FONT_DIR"
   curl -fLo /tmp/JetBrainsMono.zip "$FONT_URL" \
@@ -80,7 +76,6 @@ fi
 
 # =====================[ GNOME CONFIGURATION ]===================== #
 log_info "Configuring GNOME environment..."
-
 log_info "Applying GNOME preferences..."
 gsettings set org.gnome.desktop.interface gtk-theme 'Adwaita-dark' || log_warn "GTK theme failed"
 gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark' || log_warn "Color scheme failed"
@@ -118,12 +113,12 @@ EOF
 else
   log_info "VS Code repository already exists — skipping."
 fi
-
 log_info "Enabling RPM Fusion repositories..."
 sudo dnf install -y https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm \
                https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm || log_warn "RPM Fusion already installed"
 log_ok "RPM Fusion enabled."
 
+# =====================[ REMOVE DNF APPLICATIONS ]===================== #
 log_info "Removing unnecessary applications..."
 sudo dnf remove -y \
 cheese \
@@ -139,16 +134,15 @@ simple-scan \
 yelp
 log_ok "Unnecessary applications removed."
 
+# =====================[ UPDATE DNF APPLICATIONS ]===================== #
 log_info "Updating system..."
 sudo dnf upgrade -y
 log_ok "System up to date."
 
 # =====================[ FLATPAK SETUP ]===================== #
 log_info "Setting up Flatpak repository..."
-
 flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
 log_ok "Flathub repository ready."
-
 flatpak_apps=(
   app.zen_browser.zen
   io.dbeaver.DBeaverCommunity
@@ -156,9 +150,7 @@ flatpak_apps=(
   md.obsidian.Obsidian
   com.spotify.Client
 )
-
 log_info "Installing Flatpak applications (batch mode)..."
-
 flatpak install -y --system flathub "${flatpak_apps[@]}" \
   && log_ok "All Flatpak applications installed successfully." \
   || log_warn "There were issues installing some Flatpak applications."
@@ -173,11 +165,12 @@ sudo dnf install -y --skip-unavailable \
   cbonsai \
   cmatrix \
   code \
+  curl \
   docker \
   fastfetch \
+  file \
   fzf \
   gcc \
-  gimp \
   git-lfs \
   gnome-extensions-app \
   gnome-firmware \
@@ -187,6 +180,7 @@ sudo dnf install -y --skip-unavailable \
   make \
   nvim \
   ollama \
+  procps-ng \
   python3-pip \
   rclone \
   rclone-browser \
@@ -195,20 +189,19 @@ sudo dnf install -y --skip-unavailable \
   steam \
   stow \
   tldr \
-  vim \
   zsh \
-  zsh-autosuggestions
+  zsh-autosuggestions \
+  zsh-syntax-highlighting
 log_ok "Essential applications installed."
 
 # =====================[ GROUP INSTALL ]===================== #
 sudo dnf group install python-science -y
+sudo dnf group install development-tools -y
 
 # =====================[ CARGO INSTALL PACKAGES ]===================== #
 cargo install eza
 
 # =====================[ BREW INSTALL PACKAGES ]===================== #
-sudo dnf group install development-tools -y
-sudo dnf install procps-ng curl file -y
 NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 if ! grep -q "brew shellenv" "$HOME/.zshrc"; then
     log_info "Dodaję Homebrew do .zshrc..."
@@ -225,7 +218,6 @@ sudo dnf install -y --skip-unavailable \
   gnome-shell-extension-blur-my-shell \
   gnome-shell-extension-caffeine \
   gnome-shell-extension-drive-menu \
-  gnome-shell-extension-forge \
   gnome-shell-extension-gsconnect \
   gnome-shell-extension-system-monitor \
   gnome-shell-extension-no-overview
@@ -234,7 +226,6 @@ sudo dnf install -y --skip-unavailable \
 gnome-extensions enable --quiet\
   blur-my-shell@aunetx || true \
   forge@jmmaranan.com || true \
-
   caffeine@patapon.info || true \
   gsconnect@andyholmes.github.io || true \
   drive-menu@gnome-shell-extensions.gcampax.github.com || true \
@@ -282,16 +273,13 @@ fi
 
 # =====================[ STARSHIP PROMPT ]===================== #
 log_info "Installing Starship Prompt..."
-
 if ! command -v starship &>/dev/null; then
   curl -sS https://starship.rs/install.sh | sh -s -- -y
   log_ok "Starship binary installed."
 else
   log_info "Starship already installed — skipping binary download."
 fi
-
 STARSHIP_INIT='eval "$(starship init zsh)"'
-
 if ! grep -qF "$STARSHIP_INIT" "$HOME/.zshrc"; then
   echo "" >> "$HOME/.zshrc"
   echo "$STARSHIP_INIT" >> "$HOME/.zshrc"
@@ -300,26 +288,29 @@ else
   log_info "Starship already configured in .zshrc — skipping."
 fi
 
+# =====================[ SET ZSH AS DEFAULT ]===================== #
+log_info "Setting ZSH as default shell..."
+if [ "$SHELL" != "$(which zsh)" ]; then
+    sudo chsh -s "$(which zsh)" "$USER"
+    log_ok "Shell changed to ZSH. It will take effect after logout/login."
+else
+    log_info "ZSH is already your default shell."
+fi
+
 # =====================[ MOUNTING EXTERNAL HOME ]===================== #
 log_info "Configuring 512 GB drive as /home"
-
 HOME_UUID="688f55cd-90c1-4766-b4f9-5e1a812fe16a"
-
 log_info "Cleaning old /home entries from /etc/fstab..."
 sudo sed -i '/[[:space:]]\/home[[:space:]]/d' /etc/fstab
-
 log_info "Adding correct entry for 512GB drive..."
 echo "UUID=$HOME_UUID /home ext4 defaults 0 2" | sudo tee -a /etc/fstab > /dev/null
-
 log_info "Reloading systemd and mounting..."
 sudo systemctl daemon-reload
 sudo umount -R /home 2>/dev/null || true
 sudo mount -a
-
 log_info "Fixing permissions for user: $USER"
 sudo chown -R "$USER:$(id -gn "$USER")" "/home/$USER"
 sudo chmod 700 "/home/$USER"
-
 log_ok "512 GB Drive mounted via fstab. Reboot safe."
 
 # =====================[ CLEANUP ]===================== #
@@ -328,8 +319,8 @@ sudo dnf autoremove -y
 sudo dnf clean all -y
 log_ok "System cleanup complete."
 
-echo ""
 # =====================[ FINISH ]===================== #
+echo ""
 echo ""
 echo -e "${GREEN}========================================${NC}"
 echo -e "${GREEN} INSTALLATION COMPLETED SUCCESSFULLY!${NC}"
